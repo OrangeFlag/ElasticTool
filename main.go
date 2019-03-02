@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -40,21 +42,35 @@ func main() {
 			Name:  "cat",
 			Usage: "cat API",
 			Action: func(c *cli.Context) error {
-				return nil
+				err = cli.ShowSubcommandHelp(c)
+				return err
 			},
 			Subcommands: []cli.Command{
 				{
 					Name:  "indices",
-					Usage: "cat indices",
+					Usage: "show indices",
+					Before:  func(c *cli.Context) error{
+						c.App.Metadata["indeces"], err = client.CatIndices().Do(context.Background())
+						return err
+					},
 					Action: func(c *cli.Context) error {
-						return nil //TODO
+						indeces := c.App.Metadata["indeces"]
+						if c.Bool("all") {
+							fmt.Println(indeces)
+						} else {
+							fmt.Println(indeces)
+						}
+						return nil
 					},
 					Subcommands: []cli.Command{
 						{
 							Name:  "count",
-							Usage: "count of indices",
+							Usage: "show count of indices",
 							Action: func(c *cli.Context) error {
-								return nil //TODO
+								indeces := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
+								fmt.Println(len(indeces))
+
+								return nil
 							},
 						},
 					},
@@ -70,30 +86,16 @@ func main() {
 	}
 
 	app.Before = func(c *cli.Context) error {
-		//fmt.Println(host + ":" + port)
-
 		client, err = elastic.NewClient(elastic.SetURL("http://" + host + ":" + port))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//indeces, err := client.CatIndices().Do(context.Background())
-		//fmt.Println(indeces)
-		//
-		//health, err := client.ClusterHealth().Do(context.Background())
-		//
-		//if err != nil || health == nil {
-		//	return err
-		//}
-		//
-		//fmt.Println(health)
-
-		return nil
+		return err
 
 	}
 
 	app.Action = func(c *cli.Context) error {
-		return nil //TODO
+		if client != nil{
+			fmt.Println("Server is available")
+		}
+		return nil
 	}
 
 	err = app.Run(os.Args)
