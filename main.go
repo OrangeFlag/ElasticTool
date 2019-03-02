@@ -19,7 +19,6 @@ func main() {
 		host   string
 		port   string
 		client *elastic.Client
-		err    error
 	)
 
 	app.Flags = []cli.Flag{
@@ -42,23 +41,27 @@ func main() {
 			Name:  "cat",
 			Usage: "cat API",
 			Action: func(c *cli.Context) error {
-				err = cli.ShowSubcommandHelp(c)
+				err := cli.ShowSubcommandHelp(c)
 				return err
 			},
 			Subcommands: []cli.Command{
 				{
 					Name:  "indices",
 					Usage: "show indices",
-					Before:  func(c *cli.Context) error{
-						c.App.Metadata["indeces"], err = client.CatIndices().Columns("health,status,index,docs.count").Do(context.Background())
+					Before: func(c *cli.Context) error {
+						var err error
+						if client != nil {
+							c.App.Metadata["indeces"], err = client.CatIndices().Columns("health,status,index,docs.count").Do(context.Background())
+						}
 						return err
 					},
 					Action: func(c *cli.Context) error {
-						indeces := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
-
-						fmt.Println("Health | Status | Index | DocsCount")
-						for _, row := range indeces{
-							fmt.Println(row.Health, row.Status, row.Index, row.DocsCount)
+						indeces, ok := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
+						if ok {
+							fmt.Println("Health | Status | Index | DocsCount")
+							for _, row := range indeces {
+								fmt.Println(row.Health, row.Status, row.Index, row.DocsCount)
+							}
 						}
 						return nil
 					},
@@ -67,9 +70,10 @@ func main() {
 							Name:  "count",
 							Usage: "show count of indices",
 							Action: func(c *cli.Context) error {
-								indeces := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
-
-								fmt.Println(len(indeces))
+								indeces, ok := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
+								if ok {
+									fmt.Println(len(indeces))
+								}
 								return nil
 							},
 						},
@@ -80,19 +84,22 @@ func main() {
 	}
 
 	app.Before = func(c *cli.Context) error {
-		client, err = elastic.NewClient(elastic.SetURL("http://" + host + ":" + port))
-		return err
+		client, _ = elastic.NewClient(elastic.SetURL("http://" + host + ":" + port))
+		if client == nil {
+			fmt.Println("Server is NOT available")
+		}
+		return nil
 
 	}
 
 	app.Action = func(c *cli.Context) error {
-		if client != nil{
+		if client != nil {
 			fmt.Println("Server is available")
 		}
 		return nil
 	}
 
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
