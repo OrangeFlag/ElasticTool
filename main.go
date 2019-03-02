@@ -50,15 +50,15 @@ func main() {
 					Name:  "indices",
 					Usage: "show indices",
 					Before:  func(c *cli.Context) error{
-						c.App.Metadata["indeces"], err = client.CatIndices().Do(context.Background())
+						c.App.Metadata["indeces"], err = client.CatIndices().Columns("health,status,index,docs.count").Do(context.Background())
 						return err
 					},
 					Action: func(c *cli.Context) error {
-						indeces := c.App.Metadata["indeces"]
-						if c.Bool("all") {
-							fmt.Println(indeces)
-						} else {
-							fmt.Println(indeces)
+						indeces := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
+
+						fmt.Println("Health | Status | Index | DocsCount")
+						for _, row := range indeces{
+							fmt.Println(row.Health, row.Status, row.Index, row.DocsCount)
 						}
 						return nil
 					},
@@ -68,16 +68,10 @@ func main() {
 							Usage: "show count of indices",
 							Action: func(c *cli.Context) error {
 								indeces := c.App.Metadata["indeces"].(elastic.CatIndicesResponse)
-								fmt.Println(len(indeces))
 
+								fmt.Println(len(indeces))
 								return nil
 							},
-						},
-					},
-					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "all, a",
-							Usage: "include system indexes",
 						},
 					},
 				},
