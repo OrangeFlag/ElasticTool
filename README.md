@@ -12,6 +12,10 @@ GLOBAL OPTIONS:
    --help, -h              show help
    --version, -v           print the version
 ```
+## List of indices
+``` bash
+$ ./main cat indices
+```
 
 ## Count of indices
 ``` bash
